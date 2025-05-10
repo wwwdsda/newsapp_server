@@ -7,9 +7,10 @@ environment:
   sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
-  dart_frog: ^1.1.0
-  shelf: ^1.4.2
-  shelf_cors: ^0.2.1 
+  dart_frog: ^1.2.0
+  mongo_dart: ^0.10.5
+
+
 
 dev_dependencies:
   mocktail: ^1.0.3

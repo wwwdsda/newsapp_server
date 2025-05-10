@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
+import 'package:mongo_dart/mongo_dart.dart';
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method == HttpMethod.options) {
@@ -19,10 +20,9 @@ Future<Response> onRequest(RequestContext context) async {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept',
   };
-
+  Db? db;
   try {
     final body = await context.request.body();
-    print('받은 요청 본문: $body');
 
     if (body.isEmpty) {
       return Response.json(
@@ -32,19 +32,27 @@ Future<Response> onRequest(RequestContext context) async {
       );
     }
 
+    
+    db = await Db.create('mongodb://localhost:27017/dart_frog_newsapp');
+    await db.open();
+    final users = db.collection('users');
+    
+
     final data = jsonDecode(body) as Map<String, dynamic>;
-    final username = data['username'] as String? ?? '';
+    final id = data['id'] as String? ?? '';
     final password = data['password'] as String? ?? '';
 
-    if (username.isEmpty || password.isEmpty) {
+    if (id.isEmpty || password.isEmpty) {
       return Response.json(
         body: {'success': false, 'message': '아이디 또는 비밀번호가 비어 있습니다'},
         statusCode: HttpStatus.badRequest,
         headers: headers,
       );
     }
+    
+    final existingUser = await users.findOne(where.eq('id', id));
 
-    if (username == 'admin' && password == 'password') {
+    if (existingUser != null && existingUser['password'] == password) {
       return Response.json(
         body: {
           'success': true,
@@ -54,12 +62,15 @@ Future<Response> onRequest(RequestContext context) async {
         headers: headers,
       );
     }
-
-    return Response.json(
-      body: {'success': false, 'message': '잘못된 로그인 정보입니다'},
-      statusCode: HttpStatus.unauthorized,
-      headers: headers,
-    );
+    else{
+      return Response.json(
+        body: {'success': false, 'message': '잘못된 로그인 정보입니다'},
+        statusCode: HttpStatus.unauthorized,
+        headers: headers,
+      );
+      
+    }
+    
   } catch (e) {
     return Response.json(
       body: {'success': false, 'message': '서버 오류: ${e.toString()}'},
@@ -67,4 +78,8 @@ Future<Response> onRequest(RequestContext context) async {
       headers: headers,
     );
   }
+  finally {
+      await db?.close();
+    }
+  
 }
