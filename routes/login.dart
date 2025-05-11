@@ -3,23 +3,19 @@ import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:mongo_dart/mongo_dart.dart';
 
-Future<Response> onRequest(RequestContext context) async {
-  if (context.request.method == HttpMethod.options) {
-    return Response(
-      statusCode: HttpStatus.ok,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept',
-      },
-    );
-  }
-
-  final headers = {
+const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept',
   };
+Future<Response> onRequest(RequestContext context) async {
+  if (context.request.method == HttpMethod.options) {
+    return Response(
+      statusCode: HttpStatus.ok,
+      headers: headers,
+    );
+  }
+
   Db? db;
   try {
     final body = await context.request.body();
