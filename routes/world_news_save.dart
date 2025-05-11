@@ -26,7 +26,7 @@ Future<Response> onRequest(RequestContext context) async {
   Db? db;
   try {
     final rssUrl =
-        'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRFp4WkRNU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko';
+        'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko';
     final response = await http.get(Uri.parse(rssUrl));
     if (response.statusCode != 200) {
       return Response.json(
@@ -39,7 +39,6 @@ Future<Response> onRequest(RequestContext context) async {
     final document = xml.XmlDocument.parse(response.body);
     final items = document.findAllElements('item').take(10);
 
-    // 날짜별, 분야별 뉴스 저장
     final Map<String, Map<String, List<Map<String, dynamic>>>> newsByDate = {};
 
     for (var item in items) {
@@ -61,32 +60,33 @@ Future<Response> onRequest(RequestContext context) async {
         'summary': summary,
         'time': timeStr,
         'isScrapped': 0,
+        'isValid': false
       };
 
       newsByDate.putIfAbsent(dateStr, () => {});
-      newsByDate[dateStr]!.putIfAbsent('한국', () => []);
+      newsByDate[dateStr]!.putIfAbsent('해외', () => []);
 
       // 중복 제목 방지
-      if (!newsByDate[dateStr]!['한국']!
+      if (!newsByDate[dateStr]!['해외']!
           .any((n) => n['title'] == newsObj['title'])) {
-        newsByDate[dateStr]!['한국']!.add(newsObj);
+        newsByDate[dateStr]!['해외']!.add(newsObj);
       }
     }
 
-    // MongoDB 저장 (날짜별 1도큐먼트, 분야별 배열)
+
     db = await Db.create(mongoUri);
     await db.open();
     final collection = db.collection(collectionName);
 
     for (final date in newsByDate.keys) {
-      final fields = newsByDate[date]!; // Map<String, List<Map>>
-      final doc = {'date': date, ...fields}; // { "date": "2025-05-10", "한국": [...] }
+      final fields = newsByDate[date]!;
+      final doc = {'date': date, ...fields}; 
 
       final exists = await collection.findOne({'date': date});
       if (exists == null) {
         await collection.insertOne(doc);
       } else {
-        // 기존 도큐먼트의 분야별 뉴스 합치기 (중복 뉴스는 제목 기준으로 제외)
+        // 같은 날자 분야별 뉴스 합치기
         final Map<String, dynamic> updatedDoc = Map<String, dynamic>.from(exists);
         fields.forEach((field, newsList) {
           updatedDoc.putIfAbsent(field, () => []);

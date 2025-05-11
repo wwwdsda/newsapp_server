@@ -11,6 +11,7 @@ dependencies:
   mongo_dart: ^0.10.5
   http: ^1.4.0
   xml: ^6.5.0
+  google_generative_ai: ^0.4.7
 
 
 
