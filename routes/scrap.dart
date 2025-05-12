@@ -33,10 +33,11 @@ Future<Response> onRequest(RequestContext context) async {
     final category = data['category'] as String? ?? '';
     final date = data['date'] as String? ?? '';
     final title = data['title'] as String? ?? '';
+    final summary = data['summary'] as String? ?? '';
 
-    if (category.isEmpty || date.isEmpty || title.isEmpty) {
+    if (category.isEmpty || date.isEmpty || title.isEmpty || summary.isEmpty) {
       return Response.json(
-        body: {'success': false, 'message': '카테고리, 날짜 또는 제목이 비어 있습니다'},
+        body: {'success': false, 'message': '필수 필드가 비어 있습니다'},
         statusCode: HttpStatus.badRequest,
         headers: headers,
       );
@@ -44,10 +45,11 @@ Future<Response> onRequest(RequestContext context) async {
 
     db = await Db.create('mongodb://localhost:27017/dart_frog_newsapp');
     await db.open();
-    final collection = db.collection('news');
+    final newsCollection = db.collection('news');
+    final scrapCollection = db.collection('scrapNews');
 
-    final doc = await collection.findOne({'date': date});
-    if (doc == null) {
+    final newsDoc = await newsCollection.findOne({'date': date});
+    if (newsDoc == null) {
       return Response.json(
         body: {'success': false, 'message': '해당 날짜의 뉴스가 존재하지 않습니다'},
         statusCode: HttpStatus.notFound,
@@ -55,7 +57,7 @@ Future<Response> onRequest(RequestContext context) async {
       );
     }
 
-    final newsList = List<Map<String, dynamic>>.from(doc[category] ?? []);
+    final newsList = List<Map<String, dynamic>>.from(newsDoc[category] ?? []);
     final index = newsList.indexWhere((item) => item['title'] == title);
 
     if (index == -1) {
@@ -67,23 +69,34 @@ Future<Response> onRequest(RequestContext context) async {
     }
 
     final currentScrap = newsList[index]['isScrapped'] ?? 0;
-    newsList[index]['isScrapped'] = currentScrap == 1 ? 0 : 1;
+    final newScrapValue = currentScrap == 1 ? 0 : 1;
+    newsList[index]['isScrapped'] = newScrapValue;
 
-    // 카테고리 항목만 업데이트
-    await collection.updateOne(
+    await newsCollection.updateOne(
       {'date': date},
-      {
-        r'$set': {
-          category: newsList,
-        }
-      },
+      {r'$set': {category: newsList}},
     );
+
+    if (newScrapValue == 1) {
+      await scrapCollection.replaceOne(
+        {'date': date, 'title': title},
+        {
+          'date': date,
+          'title': title,
+          'summary': summary,
+          'category': category,
+          'isScrapped': 1,
+        },
+        upsert: true,
+      );
+    } else {
+      await scrapCollection.deleteOne({'date': date, 'title': title});
+    }
 
     await db.close();
     return Response.json(
       body: {
         'success': true,
-        'newScrapValue': newsList[index]['isScrapped']
       },
       statusCode: HttpStatus.ok,
       headers: headers,

@@ -45,7 +45,7 @@ Future<Response> onRequest(RequestContext context) async {
     final titles = allNews.map((n) => n['title'] as String).toList();
 
     final model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash',
       apiKey: apiKey,
     );
 
@@ -58,17 +58,25 @@ Future<Response> onRequest(RequestContext context) async {
 정상 제목2 
 정상 제목3
 
+### 각각의 주제에서 제일 위에 기록해야하는, 무조건 봐야하는 뉴스:
+- 공공안전, 재난, 긴급 속보 (지진, 태풍, 화재, 사고, 교통 통제 등), [속보]or[단독]이 제목에 포함
+- 정부 정책 및 입법 변화 (세금, 교육, 복지, 의료 등 실생활에 직접 영향)
+- 사회적 파장 큰 이슈 (대규모 시위, 사회 운동, 재판 결과 등)
+- 주요 국제 뉴스 (전쟁, 외교, 글로벌 경제 위기 등)
 
 ### 정상 기준:
-- 정부/공공기관/대기업 관련
+- 객관적인 사실을 전달(사건, 발표, 정책, 통계 등 정보 기반의 보도, 주관적 감정이 과도하게 들어가지 않음)
+- 정제된 제목 (과장·선정적 표현 없음, 불필요한 감탄사, 욕설, 음란/비속어 없음)
 - 사회 전반에 영향
 - 경제/정치/사회 주요 이슈
-- 속보/단독 포함
+
 
 ### 필터 기준:
+- 굳이 알 필요 없는 정치 뉴스
 - 선정적/과장된 표현
 - 광고성 내용
 - 주제와 무관한 내용
+- 중복(비슷한) 뉴스가 이미 있는 경우
 
 
 뉴스 제목:
