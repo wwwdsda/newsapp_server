@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 const mongoUri = 'mongodb://localhost:27017/dart_frog_newsapp';
-const collectionName = 'news';
 const apiKey = 'AIzaSyCQ9ZL2HCI0zuc0_6oFtqDaaDATc3M7B50';
 
 final _headers = {
@@ -19,13 +18,26 @@ Future<Response> onRequest(RequestContext context) async {
   if (context.request.method == HttpMethod.options) {
     return Response(headers: _headers);
   }
+  final id = context.request.uri.queryParameters['id'];
+  final password = context.request.uri.queryParameters['password'];
+
 
   final db = await Db.create(mongoUri);
   await db.open();
 
+  final user = await db.collection('users').findOne({
+  'id': id,
+  'password': password,
+  });
+
   try {
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final doc = await db.collection(collectionName).findOne({'date': today});
+    final doc = await db.collection('news').findOne({'date': today});
+    final keyword = (user?['키워드'] ?? []) as List<dynamic>;
+    final newsAgency = (user?['뉴스사'] ?? []) as List<dynamic>;
+    final newsSentiment = (user?['뉴스 성향'] ?? []) as List<dynamic>;
+    final newsTopic = (user?['뉴스 주제'] ?? []) as List<dynamic>;
+
     if (doc == null) {
       return Response.json(
         statusCode: 404,
@@ -34,7 +46,6 @@ Future<Response> onRequest(RequestContext context) async {
       );
     }
 
-    // 모든 분야(예: '경제')에서 title만 추출
     final List<Map<String, dynamic>> allNews = [];
     for (final key in doc.keys) {
       if (key == '_id' || key == 'date') continue;
@@ -58,9 +69,13 @@ Future<Response> onRequest(RequestContext context) async {
 정상 제목2 
 정상 제목3
 
+### 우선 내가 말한 뉴스사,성향,주제가 없는 뉴스는 비정상뉴스야:
+- 뉴스사: $newsAgency
+- 뉴스 성향: $newsSentiment
+- 뉴스 주제: $newsTopic
 
-
-### 정상 기준:  
+### 이후 정상 기준 판단:  
+키워드가 들어간 뉴스: $keyword
 객관적 사실: 사건, 발표, 정책, 통계 기반 보도 (주관적 감정 최소화)
 부정부패/권력 남용: 공직자 비리, 민주주의 훼손 등등
 주요 국내/해외 사회적 논쟁: 국민적 관심, 큰 파장 이슈 등
@@ -74,6 +89,7 @@ Future<Response> onRequest(RequestContext context) async {
 실생활 영향 정책: 세금, 교육, 복지, 의료 변화
 사회적 파장 이슈: 대규모 시위, 운동, 재판 결과
 주요 국제 뉴스: 전쟁, 외교, 경제 위기
+
 
 
 뉴스 제목:
@@ -105,7 +121,7 @@ final validTitles = response.text!
       doc[key] = updatedNews;
     }
 
-    await db.collection(collectionName).replaceOne({'date': today}, doc);
+    await db.collection('news').replaceOne({'date': today}, doc);
 
     return Response.json(
       statusCode: 200,
