@@ -69,7 +69,7 @@ Future<Response> onRequest(RequestContext context) async {
 정상 제목2 
 정상 제목3
 
-### 우선 내가 말한 뉴스사,성향,주제가 없는 뉴스는 비정상뉴스야:
+### 우선 내가 말한 뉴스사,성향,주제가 없는 뉴스는 비정상뉴스야 (빈칸이면 신경쓰지않음):
 - 뉴스사: $newsAgency
 - 뉴스 성향: $newsSentiment
 - 뉴스 주제: $newsTopic
