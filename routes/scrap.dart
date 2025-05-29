@@ -11,31 +11,21 @@ const headers = {
 
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method == HttpMethod.options) {
-    return Response(
-      statusCode: HttpStatus.ok,
-      headers: headers,
-    );
+    return Response(statusCode: HttpStatus.ok, headers: headers);
   }
 
   Db? db;
   try {
     final body = await context.request.body();
-
-    if (body.isEmpty) {
-      return Response.json(
-        body: {'success': false, 'message': '요청 본문이 비어 있습니다'},
-        statusCode: HttpStatus.badRequest,
-        headers: headers,
-      );
-    }
-
     final data = jsonDecode(body) as Map<String, dynamic>;
+
+    final userId = data['userid'] as String? ?? '';
     final category = data['category'] as String? ?? '';
     final date = data['date'] as String? ?? '';
     final title = data['title'] as String? ?? '';
     final summary = data['summary'] as String? ?? '';
 
-    if (category.isEmpty || date.isEmpty || title.isEmpty || summary.isEmpty) {
+    if ([userId, category, date, title, summary].any((e) => e.isEmpty)) {
       return Response.json(
         body: {'success': false, 'message': '필수 필드가 비어 있습니다'},
         statusCode: HttpStatus.badRequest,
@@ -59,7 +49,6 @@ Future<Response> onRequest(RequestContext context) async {
 
     final newsList = List<Map<String, dynamic>>.from(newsDoc[category] ?? []);
     final index = newsList.indexWhere((item) => item['title'] == title);
-
     if (index == -1) {
       return Response.json(
         body: {'success': false, 'message': '해당 뉴스 제목을 찾을 수 없습니다'},
@@ -68,45 +57,48 @@ Future<Response> onRequest(RequestContext context) async {
       );
     }
 
-    final currentScrap = newsList[index]['isScrapped'] ?? 0;
-    final newScrapValue = currentScrap == 1 ? 0 : 1;
-    newsList[index]['isScrapped'] = newScrapValue;
+    // 항상 리스트로 보장
+    List<String> scrapList;
+    if (newsList[index]['isScrapped'] is List) {
+      scrapList = List<String>.from(newsList[index]['isScrapped']);
+    } else {
+      scrapList = [];
+    }
+
+    final alreadyScrapped = scrapList.contains(userId);
+
+    if (alreadyScrapped) {
+      scrapList.remove(userId);
+      await scrapCollection.deleteOne({'userid': userId, 'title': title});
+    } else {
+      scrapList.add(userId);
+      await scrapCollection.insertOne({
+        'userid': userId,
+        'date': date,
+        'title': title,
+        'summary': summary,
+        'category': category,
+      });
+    }
+
+    newsList[index]['isScrapped'] = scrapList;
 
     await newsCollection.updateOne(
       {'date': date},
-      {r'$set': {category: newsList}},
-    );
-
-    if (newScrapValue == 1) {
-      await scrapCollection.replaceOne(
-        {'date': date, 'title': title},
-        {
-          'date': date,
-          'title': title,
-          'summary': summary,
-          'category': category,
-          'isScrapped': 1,
-        },
-        upsert: true,
-      );
-    } else {
-      await scrapCollection.deleteOne({'date': date, 'title': title});
-    }
-
-    await db.close();
-    return Response.json(
-      body: {
-        'success': true,
+      {
+        r'$set': {category: newsList},
       },
-      statusCode: HttpStatus.ok,
-      headers: headers,
     );
-  } catch (e, st) {
+
+    return Response.json(body: {'success': true}, headers: headers);
+  } catch (e) {
     await db?.close();
     return Response.json(
-      body: {'success': false, 'error': e.toString(), 'stack': st.toString()},
+      body: {'success': false, 'error': e.toString()},
       statusCode: HttpStatus.internalServerError,
       headers: headers,
     );
+  } finally {
+    await db?.close();
   }
 }

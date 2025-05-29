@@ -23,9 +23,24 @@ Future<Response> onRequest(RequestContext context) async {
 
   if (request.method == HttpMethod.post) {
     final body = await request.body();
-    final data = jsonDecode(body);
-    id = data['id'];
-    password = data['password'];
+    if (body.isEmpty) {
+      return Response.json(
+        statusCode: HttpStatus.badRequest,
+        body: {'success': false, 'message': '요청 바디가 비어있습니다.'},
+        headers: headers,
+      );
+    }
+    try {
+      final data = jsonDecode(body);
+      id = data['id'];
+      password = data['password'];
+    } catch (e) {
+      return Response.json(
+        statusCode: HttpStatus.badRequest,
+        body: {'success': false, 'message': '잘못된 JSON 형식입니다.'},
+        headers: headers,
+      );
+    }
   } else if (request.method == HttpMethod.get) {
     id = request.uri.queryParameters['id'];
     password = request.uri.queryParameters['password'];
@@ -47,9 +62,19 @@ Future<Response> onRequest(RequestContext context) async {
     'password': password,
   });
 
-  final newsBias = (user?['뉴스 성향'] as List<dynamic>?) ?? [];
+  dynamic rawBias = user?['뉴스 성향'];
+
+  List<dynamic> newsBias;
+  if (rawBias is List) {
+    newsBias = rawBias;
+  } else if (rawBias != null) {
+    newsBias = [rawBias];
+  } else {
+    newsBias = [];
+  }
 
   await db.close();
+
   return Response.json(
     body: {
       'success': true,

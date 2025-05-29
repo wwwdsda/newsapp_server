@@ -59,7 +59,7 @@ Future<Response> onRequest(RequestContext context) async {
         '키워드': data['키워드'] ?? [],
         '뉴스사': data['뉴스사'] ?? [],
         '뉴스 성향': data['뉴스 성향'] ?? [],
-        '뉴스 주제': data['뉴스 주제'] ?? ['국내 정치, 해외, 경제'],
+        '뉴스 주제': data['뉴스 주제'] ?? ['국내, 해외, 경제'],
       });
 
       return Response.json(
