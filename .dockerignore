@@ -1,0 +1,8 @@
+build/
+.dart_tool/
+.packages
+*.md
+*.iml
+.git
+.gitignore
+test/
