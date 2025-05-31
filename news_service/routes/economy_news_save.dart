@@ -72,14 +72,14 @@ Future<Response> onRequest(RequestContext context) async {
 
     for (final date in newsByDate.keys) {
       final fields = newsByDate[date]!;
-      final doc = {'date': date, ...fields}; 
+      final doc = {'date': date, ...fields};
 
       final exists = await collection.findOne({'date': date});
       if (exists == null) {
         await collection.insertOne(doc);
       } else {
-
-        final Map<String, dynamic> updatedDoc = Map<String, dynamic>.from(exists);
+        final Map<String, dynamic> updatedDoc =
+            Map<String, dynamic>.from(exists);
         fields.forEach((field, newsList) {
           updatedDoc.putIfAbsent(field, () => []);
           for (final news in newsList) {

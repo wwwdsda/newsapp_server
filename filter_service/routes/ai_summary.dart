@@ -23,11 +23,11 @@ Future<frog.Response> onRequest(frog.RequestContext context) async {
 
   try {
     final model = GenerativeModel(
-      model: 'gemini-2.0-flash', 
+      model: 'gemini-2.0-flash',
       apiKey: apiKey,
     );
 
-final prompt = """
+    final prompt = """
 너는 뉴스 요약 전문가야. 아래 뉴스 제목에 해당하는 기사를 웹에서 찾아 내용을 읽고, 읽은 기사 내용을 바탕으로 한국어로 간결하게 요약해 줘.
 
 - 요약 내용에는 **볼드체(**)나 `****`와 같은 마크다운 기호를 사용하지 마십시오.

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dart_frog/dart_frog.dart';
 import 'package:mongo_dart/mongo_dart.dart';
 import '../lib/globals.dart';
+
 Future<Response> onRequest(RequestContext context) async {
   if (context.request.method == HttpMethod.options) {
     return Response(statusCode: HttpStatus.ok, headers: headers);
@@ -26,9 +27,9 @@ Future<Response> onRequest(RequestContext context) async {
   await db.open();
 
   await db.collection('users').updateOne(
-    where.eq('id', id),
-    modify.set('뉴스 성향', biases),
-  );
+        where.eq('id', id),
+        modify.set('뉴스 성향', biases),
+      );
 
   await db.close();
 

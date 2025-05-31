@@ -5,7 +5,7 @@ import 'package:mongo_dart/mongo_dart.dart';
 import '../lib/globals.dart';
 
 Future<Response> onRequest(RequestContext context) async {
-    if (context.request.method == HttpMethod.options) {
+  if (context.request.method == HttpMethod.options) {
     return Response(
       statusCode: HttpStatus.ok,
       headers: headers,
@@ -24,7 +24,8 @@ Future<Response> onRequest(RequestContext context) async {
   final user = await userCollection.findOne({'id': id, 'password': password});
   if (user == null) {
     await db.close();
-    return Response.json(statusCode: 401, body: {'message': '인증 실패'}, headers: headers);
+    return Response.json(
+        statusCode: 401, body: {'message': '인증 실패'}, headers: headers);
   }
 
   final existing = List<String>.from(user['키워드'] ?? []);

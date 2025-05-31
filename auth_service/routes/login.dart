@@ -24,11 +24,9 @@ Future<Response> onRequest(RequestContext context) async {
       );
     }
 
-    
     db = await Db.create(mongoUri);
     await db.open();
     final users = db.collection('users');
-    
 
     final data = jsonDecode(body) as Map<String, dynamic>;
     final id = data['id'] as String? ?? '';
@@ -41,7 +39,7 @@ Future<Response> onRequest(RequestContext context) async {
         headers: headers,
       );
     }
-    
+
     final existingUser = await users.findOne(where.eq('id', id));
 
     if (existingUser != null && existingUser['password'] == password) {
@@ -53,26 +51,20 @@ Future<Response> onRequest(RequestContext context) async {
         },
         headers: headers,
       );
-      
-    }
-    else{
+    } else {
       return Response.json(
         body: {'success': false, 'message': '잘못된 로그인 정보입니다'},
         statusCode: HttpStatus.unauthorized,
         headers: headers,
       );
-      
     }
-    
   } catch (e) {
     return Response.json(
       body: {'success': false, 'message': '서버 오류: ${e.toString()}'},
       statusCode: HttpStatus.internalServerError,
       headers: headers,
     );
+  } finally {
+    await db?.close();
   }
-  finally {
-      await db?.close();
-    }
-  
 }

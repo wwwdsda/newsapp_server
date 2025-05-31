@@ -53,18 +53,17 @@ Future<Response> onRequest(RequestContext context) async {
 
     final scrappedNews = await collection.find({'userid': userId}).toList();
 
-    final formattedNews =
-        scrappedNews.map((doc) {
-          final newDoc = Map<String, dynamic>.from(doc);
-          newDoc.remove('_id');
-          if (newDoc.containsKey('date')) {
-            final date = DateTime.tryParse(newDoc['date'].toString());
-            if (date != null) {
-              newDoc['date'] = DateFormat('yyyy-MM-dd').format(date);
-            }
-          }
-          return newDoc;
-        }).toList();
+    final formattedNews = scrappedNews.map((doc) {
+      final newDoc = Map<String, dynamic>.from(doc);
+      newDoc.remove('_id');
+      if (newDoc.containsKey('date')) {
+        final date = DateTime.tryParse(newDoc['date'].toString());
+        if (date != null) {
+          newDoc['date'] = DateFormat('yyyy-MM-dd').format(date);
+        }
+      }
+      return newDoc;
+    }).toList();
 
     return Response.json(
       body: formattedNews,

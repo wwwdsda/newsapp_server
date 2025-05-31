@@ -27,9 +27,9 @@ Future<Response> onRequest(RequestContext context) async {
   await db.open();
 
   await db.collection('users').updateOne(
-    where.eq('id', id),
-    modify.set('뉴스 주제', topics),
-  );
+        where.eq('id', id),
+        modify.set('뉴스 주제', topics),
+      );
 
   await db.close();
 

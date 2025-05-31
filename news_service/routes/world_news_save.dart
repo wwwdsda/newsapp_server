@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart' as xml;
 import 'package:intl/intl.dart';
 import '../lib/globals.dart';
+
 const collectionName = 'news';
 
 Future<Response> onRequest(RequestContext context) async {
@@ -66,21 +67,21 @@ Future<Response> onRequest(RequestContext context) async {
       }
     }
 
-
     db = await Db.create(mongoUri);
     await db.open();
     final collection = db.collection(collectionName);
 
     for (final date in newsByDate.keys) {
       final fields = newsByDate[date]!;
-      final doc = {'date': date, ...fields}; 
+      final doc = {'date': date, ...fields};
 
       final exists = await collection.findOne({'date': date});
       if (exists == null) {
         await collection.insertOne(doc);
       } else {
         // 같은 날자 분야별 뉴스 합치기
-        final Map<String, dynamic> updatedDoc = Map<String, dynamic>.from(exists);
+        final Map<String, dynamic> updatedDoc =
+            Map<String, dynamic>.from(exists);
         fields.forEach((field, newsList) {
           updatedDoc.putIfAbsent(field, () => []);
           for (final news in newsList) {
